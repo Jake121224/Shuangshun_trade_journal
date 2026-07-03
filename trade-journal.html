@@ -276,6 +276,25 @@
   .stats-table td { padding: 8px; }
   .stats-table tr { border-bottom: 0.5px solid var(--border); }
   .icon { display: inline-block; width: 1em; text-align: center; }
+  .shot-zone {
+    border: 1.5px dashed var(--border-2); border-radius: var(--radius);
+    padding: 20px; text-align: center; cursor: pointer; color: var(--text-3);
+    transition: border-color 0.2s; background: var(--bg-2);
+    min-height: 56px; display: flex; align-items: center; justify-content: center;
+    flex-wrap: wrap; gap: 8px;
+  }
+  .shot-zone:hover, .shot-zone.drag { border-color: var(--info-border); color: var(--info-text); }
+  .shot-thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 4px; border:0.5px solid var(--border); cursor:pointer; }
+  .shot-thumb-wrap { position:relative; display:inline-block; }
+  .shot-thumb-wrap .del {
+    position:absolute; top:-6px; right:-6px; width:18px; height:18px;
+    background: var(--danger-bg); color: var(--danger-text); border-radius:50%;
+    font-size:10px; line-height:18px; text-align:center; cursor:pointer;
+  }
+  .history-shots { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+  .history-shots img { width:60px; height:60px; object-fit:cover; border-radius:4px; border:0.5px solid var(--border); cursor:pointer; }
+  .lightbox { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .lightbox img { max-width:92vw; max-height:92vh; border-radius:6px; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
@@ -548,6 +567,14 @@
       <textarea id="f-review" placeholder="一句话说清最值得改的地方"></textarea>
     </div>
 
+    <div class="field">
+      <label class="field-label">📷 截图 <span style="color:var(--text-3);font-size:11px">— 点击/粘贴/拖拽,最多 9 张</span></label>
+      <div class="shot-zone" id="shot-zone" onclick="document.getElementById('shot-input').click()">
+        点击、粘贴(Ctrl+V) 或拖拽图片到这里
+      </div>
+      <input type="file" id="shot-input" accept="image/*" multiple style="display:none" onchange="handleShotFiles(this.files)" />
+    </div>
+
     <div class="actions">
       <button class="btn-primary" onclick="saveTrade()">✓ 保存</button>
       <button class="btn-secondary" onclick="clearForm()">清空</button>
@@ -599,7 +626,7 @@
   const KEY = 'trade_journal_v1';
   const SB_URL = 'https://tawovxvjcywlkfawoshg.supabase.co';
   const SB_KEY = 'sb_publishable_pYcauYpjjqWU6oVXIMhxiw_uWVeNFvf';
-  let trades = [], editingId = null, sb, cloudOk = false;
+  let trades = [], editingId = null, sb, cloudOk = false, pendingShots = [];
 
   // 1) 先读本地缓存，页面立即可用
   try { const raw = localStorage.getItem(KEY); if (raw) trades = JSON.parse(raw); } catch(e) {}
@@ -953,6 +980,106 @@
   function val(id) { return document.getElementById(id).value.trim(); }
   function num(id) { const v = val(id); return v==='' ? null : parseFloat(v); }
 
+  // ---- 截图 ----
+  window.handleShotFiles = function(files) {
+    Array.from(files).forEach(f => addShot(f));
+  };
+
+  function addShot(file) {
+    if (pendingShots.length >= 9) { toast('最多 9 张截图'); return; }
+    pendingShots.push({ file, blobUrl: URL.createObjectURL(file) });
+    renderShotPreviews();
+  }
+
+  function addExistingShot(url) {
+    if (pendingShots.length >= 9) return;
+    pendingShots.push({ url });
+    renderShotPreviews();
+  }
+
+  window.removeShot = function(i) {
+    const s = pendingShots[i];
+    if (s && s.blobUrl) URL.revokeObjectURL(s.blobUrl);
+    pendingShots.splice(i, 1);
+    renderShotPreviews();
+  };
+
+  function renderShotPreviews() {
+    const zone = document.getElementById('shot-zone');
+    if (pendingShots.length === 0) {
+      zone.innerHTML = '点击、粘贴(Ctrl+V) 或拖拽图片到这里';
+      return;
+    }
+    zone.innerHTML = pendingShots.map((s, i) => {
+      const src = s.blobUrl || s.url;
+      return '<span class="shot-thumb-wrap"><img class="shot-thumb" src="' + src + '" onclick="event.stopPropagation();showLightbox(\'' + src + '\')">' +
+      '<span class="del" onclick="event.stopPropagation();removeShot(' + i + ')">✕</span></span>';
+    }).join('') + '<span style="flex-basis:100%;font-size:11px;color:var(--text-3)">共 ' + pendingShots.length + ' 张，点击上方或 Ctrl+V 继续添加</span>';
+  }
+
+  window.showLightbox = function(src) {
+    const lb = document.createElement('div');
+    lb.className = 'lightbox';
+    lb.innerHTML = '<img src="' + src + '">';
+    lb.onclick = function() { lb.remove(); };
+    document.body.appendChild(lb);
+  };
+
+  async function uploadShots(tradeId) {
+    const urls = [];
+    for (let i = 0; i < pendingShots.length; i++) {
+      const s = pendingShots[i];
+      if (!s || !s.file) continue;
+      const ext = s.file.name.split('.').pop() || 'png';
+      const path = tradeId + '/' + Date.now() + '_' + i + '.' + ext;
+      try {
+        const { error } = await sb.storage.from('screenshots').upload(path, s.file, { upsert: true });
+        if (error) { console.warn('截图上传失败', error); continue; }
+        const { data } = sb.storage.from('screenshots').getPublicUrl(path);
+        if (data) urls.push(data.publicUrl);
+      } catch(e) { console.warn('截图上传异常', e); }
+    }
+    return urls;
+  }
+
+  function clearShots() {
+    pendingShots.forEach(s => { if (s && s.blobUrl) URL.revokeObjectURL(s.blobUrl); });
+    pendingShots = [];
+    renderShotPreviews();
+  }
+
+  function getExistingShotUrls() {
+    return pendingShots.filter(s => s && s.url).map(s => s.url);
+  }
+
+  function getNewShotCount() {
+    return pendingShots.filter(s => s && s.file).length;
+  }
+
+  // 粘贴截图
+  document.addEventListener('paste', function(e) {
+    if (document.getElementById('tab-form').style.display === 'none') return;
+    const items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        addShot(item.getAsFile());
+      }
+    }
+  });
+
+  // 拖拽截图
+  (function(){
+    const zone = document.getElementById('shot-zone');
+    zone.addEventListener('dragover', function(e) { e.preventDefault(); zone.classList.add('drag'); });
+    zone.addEventListener('dragleave', function() { zone.classList.remove('drag'); });
+    zone.addEventListener('drop', function(e) {
+      e.preventDefault(); zone.classList.remove('drag');
+      handleShotFiles(e.dataTransfer.files);
+    });
+  })();
+
   window.saveTrade = function() {
     let entry = num('f-entry');
     let lots = num('f-lots');
@@ -1024,6 +1151,7 @@
       exitReason: val('f-exit-reason'),
       r,
       review: val('f-review'),
+      screenshots: getExistingShotUrls(),
     };
 
     if (editingId) {
@@ -1036,6 +1164,19 @@
     saveToCloud(t);
     updateCount();
     toast('已保存 ✓');
+
+    // 上传新截图（异步）
+    if (getNewShotCount() > 0) {
+      uploadShots(t.id).then(urls => {
+        const ti = trades.findIndex(x => x.id === t.id);
+        if (ti >= 0 && urls.length > 0) {
+          trades[ti].screenshots = (trades[ti].screenshots || []).concat(urls);
+          saveToCloud(trades[ti]);
+        }
+        clearShots();
+      });
+    }
+
     clearForm();
   };
 
@@ -1057,6 +1198,7 @@
     document.getElementById('entry-legs').innerHTML = '';
     document.getElementById('entry-legs-info').style.display = 'none';
     loadSettings(); // 账户资金和风险%不清,自动填回
+    clearShots();
     editingId = null;
     window.scrollTo(0, 0);
   };
@@ -1141,6 +1283,7 @@
           (t.entrySetup||t.entryReason?'<span style="flex-basis:100%;margin-top:4px">📌 ' + escapeHtml([t.entrySetup, t.entryReason].filter(Boolean).join(' — ')) + '</span>':'') +
           (t.review?'<span style="flex-basis:100%;color:var(--text);margin-top:4px">💡 ' + escapeHtml(t.review) + '</span>':'') +
         '</div>' +
+        (t.screenshots&&t.screenshots.length ? '<div class="history-shots">' + t.screenshots.map(u => '<img src="' + u + '" loading="lazy" onclick="showLightbox(\'' + u + '\')" />').join('') + '</div>' : '') +
         '<div style="margin-top:10px;display:flex;gap:8px">' +
           '<button class="btn-small" onclick="editTrade(\'' + t.id + '\')">编辑</button>' +
           '<button class="btn-small btn-danger" onclick="deleteTrade(\'' + t.id + '\')">删除</button>' +
@@ -1190,6 +1333,8 @@
     document.getElementById('f-exit-reason').value = t.exitReason||'';
     document.getElementById('f-r').value = t.r==null?'':t.r;
     document.getElementById('f-review').value = t.review||'';
+    clearShots();
+    (t.screenshots||[]).forEach(u => addExistingShot(u));
     switchTab('form');
   };
 
