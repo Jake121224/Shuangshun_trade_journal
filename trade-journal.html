@@ -641,7 +641,11 @@
       const { data, error } = await sb.from('trades').select('*').order('created_at', { ascending: false });
       if (error) throw error;
       const cloud = (data || []).map(row => ({ ...row.trade, id: row.id }));
-      if (JSON.stringify(cloud) !== JSON.stringify(trades)) {
+
+      // 云端空但本地有数据 → 自动把本地上传到云端
+      if (cloud.length === 0 && trades.length > 0) {
+        importToCloud(trades);
+      } else if (JSON.stringify(cloud) !== JSON.stringify(trades)) {
         trades = cloud;
         localStorage.setItem(KEY, JSON.stringify(trades));
         if (document.getElementById('tab-history').style.display !== 'none') renderHistory();
