@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="交易复盘">
+<meta name="theme-color" content="#ffffff">
+<title>交易复盘</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-2: #f7f6f3;
+    --bg-3: #f0eee9;
+    --text: #1a1a1a;
+    --text-2: #6b6a65;
+    --text-3: #9a988f;
+    --border: rgba(0,0,0,0.10);
+    --border-2: rgba(0,0,0,0.18);
+    --info-bg: #E6F1FB;
+    --info-text: #0C447C;
+    --info-border: #378ADD;
+    --success-bg: #EAF3DE;
+    --success-text: #27500A;
+    --success-border: #639922;
+    --danger-bg: #FCEBEB;
+    --danger-text: #791F1F;
+    --danger-border: #E24B4A;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a1a;
+      --bg-2: #242422;
+      --bg-3: #2c2c2a;
+      --text: #f0eee9;
+      --text-2: #a8a69e;
+      --text-3: #6b6a65;
+      --border: rgba(255,255,255,0.10);
+      --border-2: rgba(255,255,255,0.18);
+      --info-bg: #042C53;
+      --info-text: #B5D4F4;
+      --success-bg: #173404;
+      --success-text: #C0DD97;
+      --danger-bg: #501313;
+      --danger-text: #F7C1C1;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+    padding-top: calc(16px + env(safe-area-inset-top));
+  }
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .header h1 {
+    font-size: 18px; font-weight: 500; margin: 0;
+  }
+  .header-sub {
+    font-size: 12px; color: var(--text-3); margin-top: 2px;
+  }
+  .tabs {
+    display: flex; border-bottom: 0.5px solid var(--border);
+    margin-bottom: 16px;
+    position: sticky; top: 0;
+    background: var(--bg);
+    z-index: 10;
+    padding-top: 4px;
+  }
+  .tab-btn {
+    padding: 10px 14px; font-size: 14px; background: transparent;
+    border: none; color: var(--text-2); cursor: pointer;
+    border-bottom: 2px solid transparent;
+    font-family: inherit;
+    -webkit-appearance: none;
+  }
+  .tab-btn.active {
+    color: var(--text); border-bottom-color: var(--text); font-weight: 500;
+  }
+  .field { margin-bottom: 14px; }
+  .field-label {
+    display: block; font-size: 13px; color: var(--text-2);
+    margin-bottom: 6px;
+  }
+  .field-num {
+    display: inline-block; width: 22px; color: var(--text-3); font-size: 12px;
+  }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  @media (max-width: 480px) {
+    .row3 { grid-template-columns: 1fr; }
+  }
+  .seg { display: flex; gap: 6px; flex-wrap: wrap; }
+  .seg button {
+    padding: 8px 16px; font-size: 14px;
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer; color: var(--text);
+    font-family: inherit;
+    -webkit-appearance: none;
+    min-height: 36px;
+  }
+  .seg button.on {
+    background: var(--info-bg);
+    color: var(--info-text);
+    border-color: var(--info-border);
+    font-weight: 500;
+  }
+  .seg button.on-long {
+    background: var(--success-bg);
+    color: var(--success-text);
+    border-color: var(--success-border);
+    font-weight: 500;
+  }
+  .seg button.on-short {
+    background: var(--danger-bg);
+    color: var(--danger-text);
+    border-color: var(--danger-border);
+    font-weight: 500;
+  }
+  input[type="text"], input[type="number"], input[type="datetime-local"], textarea, select {
+    width: 100%; padding: 10px 12px;
+    font-size: 15px; font-family: inherit;
+    background: var(--bg);
+    color: var(--text);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--info-border);
+    box-shadow: 0 0 0 3px rgba(55,138,221,0.15);
+  }
+  textarea {
+    min-height: 64px; resize: vertical;
+    line-height: 1.5;
+  }
+  .section-title {
+    font-size: 13px; font-weight: 500; color: var(--text-2);
+    margin: 20px 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .stat-card {
+    background: var(--bg-2);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+  }
+  .stat-label { font-size: 12px; color: var(--text-2); margin-bottom: 4px; }
+  .stat-value { font-size: 22px; font-weight: 500; }
+  .record-row {
+    padding: 12px 14px;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+    background: var(--bg);
+  }
+  .record-meta {
+    font-size: 12px; color: var(--text-2);
+    display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px;
+  }
+  .pill {
+    display: inline-block; padding: 2px 8px;
+    border-radius: var(--radius); font-size: 11px; font-weight: 500;
+  }
+  .pill-long { background: var(--success-bg); color: var(--success-text); }
+  .pill-short { background: var(--danger-bg); color: var(--danger-text); }
+  .empty {
+    text-align: center; color: var(--text-3);
+    padding: 40px 20px; font-size: 14px;
+  }
+  .toolbar {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;
+  }
+  .toolbar input, .toolbar select {
+    padding: 8px 10px; font-size: 13px;
+    min-height: 36px;
+    width: auto; flex: 1; min-width: 120px;
+  }
+  .actions {
+    display: flex; gap: 10px; margin-top: 24px;
+    padding-top: 16px;
+    border-top: 0.5px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .btn-primary {
+    padding: 12px 24px;
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    border-radius: var(--radius);
+    font-size: 15px; font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    -webkit-appearance: none;
+    min-height: 44px;
+    flex: 1; min-width: 100px;
+  }
+  .btn-secondary {
+    padding: 12px 18px;
+    background: transparent;
+    color: var(--text);
+    border: 0.5px solid var(--border-2);
+    border-radius: var(--radius);
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+    -webkit-appearance: none;
+    min-height: 44px;
+  }
+  .btn-small {
+    padding: 6px 12px;
+    font-size: 12px;
+    min-height: 32px;
+    background: transparent;
+    border: 0.5px solid var(--border-2);
+    border-radius: var(--radius);
+    color: var(--text);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-danger { color: var(--danger-text); }
+  .pnl-pos { color: var(--success-text); font-weight: 500; }
+  .pnl-neg { color: var(--danger-text); font-weight: 500; }
+  .toast {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    padding: 10px 18px; background: var(--success-bg); color: var(--success-text);
+    border-radius: var(--radius); font-size: 14px;
+    opacity: 0; transition: opacity 0.3s;
+    z-index: 1000; pointer-events: none;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+  }
+  .toast.show { opacity: 1; }
+  .menu-btn {
+    background: transparent; border: 0.5px solid var(--border);
+    border-radius: var(--radius); padding: 6px 10px;
+    color: var(--text); cursor: pointer; font-family: inherit; font-size: 13px;
+  }
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    display: none; align-items: center; justify-content: center;
+    z-index: 100; padding: 20px;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    background: var(--bg); border-radius: var(--radius-lg);
+    padding: 20px; max-width: 320px; width: 100%;
+  }
+  .modal h3 { margin: 0 0 12px; font-size: 16px; font-weight: 500; }
+  .modal p { margin: 0 0 16px; font-size: 14px; color: var(--text-2); }
+  .stats-table {
+    width: 100%; font-size: 13px; border-collapse: collapse;
+  }
+  .stats-table th {
+    text-align: left; padding: 8px; font-weight: 400;
+    color: var(--text-2); border-bottom: 0.5px solid var(--border);
+  }
+  .stats-table td { padding: 8px; }
+  .stats-table tr { border-bottom: 0.5px solid var(--border); }
+  .icon { display: inline-block; width: 1em; text-align: center; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+<div id="toast" class="toast"></div>
+
+<div class="container">
+  <div class="header">
+    <div>
+      <h1>📊 交易复盘</h1>
+      <div class="header-sub">☁️ 多设备云同步 <span id="sync-dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#9a988f;vertical-align:middle;margin-left:2px" title="同步中..."></span></div>
+    </div>
+    <button class="menu-btn" onclick="showMenu()">⋯</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="form" onclick="switchTab('form')">✎ 录入</button>
+    <button class="tab-btn" data-tab="history" onclick="switchTab('history')">☰ 历史 (<span id="count">0</span>)</button>
+    <button class="tab-btn" data-tab="stats" onclick="switchTab('stats')">📈 统计</button>
+  </div>
+
+  <!-- ===== 录入 ===== -->
+  <div id="tab-form">
+    <div class="section-title">基础信息</div>
+
+    <div class="field">
+      <label class="field-label"><span class="field-num">1.</span>时间</label>
+      <input type="datetime-local" id="f-time" />
+    </div>
+
+    <div class="field">
+      <label class="field-label"><span class="field-num">2.</span>品种 + 合约</label>
+      <input type="text" id="f-symbol" placeholder="如:螺纹 RB2510" />
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label class="field-label"><span class="field-num">3.</span>大周期</label>
+        <input type="text" id="f-big" placeholder="如:1H / 日线" />
+      </div>
+      <div class="field">
+        <label class="field-label">小周期</label>
+        <input type="text" id="f-small" placeholder="如:5M / 15M" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label"><span class="field-num">4.</span>方向</label>
+      <div class="seg" id="f-dir">
+        <button type="button" data-v="多" onclick="pick(this,'dir')">多</button>
+        <button type="button" data-v="空" onclick="pick(this,'dir')">空</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label"><span class="field-num">5.</span>大周期趋势</label>
+      <div class="seg" id="f-trend">
+        <button type="button" data-v="上涨" onclick="pick(this,'trend')">上涨</button>
+        <button type="button" data-v="下跌" onclick="pick(this,'trend')">下跌</button>
+        <button type="button" data-v="震荡" onclick="pick(this,'trend')">震荡</button>
+      </div>
+    </div>
+
+    <div class="section-title">重心结构</div>
+
+    <div class="row2">
+      <div class="field">
+        <label class="field-label"><span class="field-num">6.</span>前重心 下沿</label>
+        <input type="number" id="f-pre-low" step="any" inputmode="decimal" />
+      </div>
+      <div class="field">
+        <label class="field-label">前重心 上沿</label>
+        <input type="number" id="f-pre-high" step="any" inputmode="decimal" />
+      </div>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label class="field-label"><span class="field-num">7.</span>后重心 下沿</label>
+        <input type="number" id="f-post-low" step="any" inputmode="decimal" />
+      </div>
+      <div class="field">
+        <label class="field-label">后重心 上沿</label>
+        <input type="number" id="f-post-high" step="any" inputmode="decimal" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">与前重心关系</label>
+      <div class="seg" id="f-rel">
+        <button type="button" data-v="高" onclick="pick(this,'rel')">高</button>
+        <button type="button" data-v="低" onclick="pick(this,'rel')">低</button>
+        <button type="button" data-v="相当" onclick="pick(this,'rel')">相当</button>
+      </div>
+    </div>
+
+    <div class="section-title">进场</div>
+
+    <div class="row3">
+      <div class="field">
+        <label class="field-label"><span class="field-num">8.</span>新小重心 下沿</label>
+        <input type="number" id="f-new-low" step="any" inputmode="decimal" />
+      </div>
+      <div class="field">
+        <label class="field-label">新小重心 上沿</label>
+        <input type="number" id="f-new-high" step="any" inputmode="decimal" />
+      </div>
+      <div class="field">
+        <label class="field-label">突破方向</label>
+        <div class="seg" id="f-break">
+          <button type="button" data-v="向上" onclick="pick(this,'break')">↑ 上</button>
+          <button type="button" data-v="向下" onclick="pick(this,'break')">↓ 下</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">突破价位</label>
+      <input type="number" id="f-break-price" step="any" inputmode="decimal" />
+    </div>
+
+    <div class="field">
+      <label class="field-label">入场理由(类型)</label>
+      <select id="f-entry-setup" onchange="showSetupInfo()">
+        <option value="">— 选择入场类型 —</option>
+        <optgroup label="A 顺势类">
+          <option value="A1 大趋势回调结束做顺势">A1 大趋势回调结束做顺势</option>
+          <option value="A2 大趋势高位震荡突破延续">A2 大趋势高位震荡突破延续</option>
+          <option value="A3 趋势中新重心再突破">A3 趋势中新重心再突破</option>
+          <option value="A4 大小级别共振进场">A4 大小级别共振进场</option>
+        </optgroup>
+        <optgroup label="B 震荡类">
+          <option value="B1 震荡区间内中势中段进场">B1 震荡区间内中势中段进场</option>
+          <option value="B2 震荡区间边界反弹进场">B2 震荡区间边界反弹进场</option>
+          <option value="B3 震荡假突破回归进场">B3 震荡假突破回归进场</option>
+        </optgroup>
+        <optgroup label="C 逆势类">
+          <option value="C1 大趋势中反弹/回调进场">C1 大趋势中反弹/回调进场</option>
+          <option value="C2 大趋势末端反转进场">C2 大趋势末端反转进场</option>
+        </optgroup>
+        <optgroup label="D 反转类">
+          <option value="D1 大小共振反转">D1 大小共振反转</option>
+          <option value="D2 关键位反转">D2 关键位反转</option>
+        </optgroup>
+      </select>
+      <div id="setup-info" style="display:none;margin-top:8px;padding:10px 12px;background:var(--bg-2);border-radius:var(--radius);font-size:12px;color:var(--text-2);line-height:1.7"></div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">入场理由(补充说明)</label>
+      <textarea id="f-entry-reason" placeholder="如:1H上涨,P2高于P1;5M回调否定后新P3被突破"></textarea>
+    </div>
+
+    <div class="field">
+      <label class="field-label">分批进场 <span style="color:var(--text-3);font-size:11px">— 首仓+加仓时,一笔一行</span></label>
+      <div id="entry-legs"></div>
+      <button type="button" class="btn-small" onclick="addEntryLeg()" style="margin-bottom:6px">＋ 添加一笔进场</button>
+      <div id="entry-legs-info" style="display:none;padding:10px 12px;background:var(--bg-2);border-radius:var(--radius);font-size:13px;line-height:1.7"></div>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label class="field-label"><span class="field-num">9.</span>进场价 <span style="color:var(--text-3);font-size:11px">— 分批则留空,自动按均价</span></label>
+        <input type="number" id="f-entry" step="any" inputmode="decimal" oninput="calcLots();calcLegs()" />
+      </div>
+      <div class="field">
+        <label class="field-label"><span class="field-num">10.</span>止损价</label>
+        <input type="number" id="f-stop" step="any" inputmode="decimal" oninput="calcLots();calcLegs()" />
+      </div>
+    </div>
+
+    <div class="section-title">仓位计算</div>
+
+    <div class="row2">
+      <div class="field">
+        <label class="field-label">账户资金(元)<span style="color:var(--text-3);font-size:11px"> — 记住,下次自动填</span></label>
+        <input type="number" id="f-capital" step="any" inputmode="decimal" oninput="calcLots();saveSettings()" />
+      </div>
+      <div class="field">
+        <label class="field-label">单笔风险 %</label>
+        <input type="number" id="f-risk" step="0.1" inputmode="decimal" placeholder="新手建议 1" oninput="calcLots();saveSettings()" />
+      </div>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label class="field-label">每点价值(元/点 = 每手吨数)</label>
+        <select id="f-pv-preset" onchange="pickPV()">
+          <option value="">手动填 / 选品种自动填 →</option>
+          <option value="10">螺纹钢 rb — 10吨</option>
+          <option value="10">热卷 hc — 10吨</option>
+          <option value="100">铁矿石 i — 100吨</option>
+          <option value="100">焦炭 j — 100吨</option>
+          <option value="60">焦煤 jm — 60吨</option>
+          <option value="5">沪铜 cu — 5吨</option>
+          <option value="5">沪铝 al — 5吨</option>
+          <option value="5">沪锌 zn — 5吨</option>
+          <option value="15">沪银 ag — 15千克</option>
+          <option value="1000">沪金 au — 1000克</option>
+          <option value="10">橡胶 ru — 10吨</option>
+          <option value="10">沥青 bu — 10吨</option>
+          <option value="5">PTA — 5吨</option>
+          <option value="10">甲醇 MA — 10吨</option>
+          <option value="20">玻璃 FG — 20吨</option>
+          <option value="20">纯碱 SA — 20吨</option>
+          <option value="20">尿素 UR — 20吨</option>
+          <option value="10">豆粕 m — 10吨</option>
+          <option value="10">豆油 y — 10吨</option>
+          <option value="10">棕榈油 p — 10吨</option>
+          <option value="10">菜粕 RM — 10吨</option>
+          <option value="10">菜油 OI — 10吨</option>
+          <option value="10">白糖 SR — 10吨</option>
+          <option value="5">棉花 CF — 5吨</option>
+          <option value="10">玉米 c — 10吨</option>
+          <option value="16">生猪 lh — 16吨</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">&nbsp;</label>
+        <input type="number" id="f-point-value" step="any" inputmode="decimal" placeholder="如:10" oninput="calcLots()" />
+      </div>
+    </div>
+
+    <div id="lots-info" style="display:none;margin-bottom:14px;padding:10px 12px;background:var(--bg-2);border-radius:var(--radius);font-size:13px;line-height:1.7"></div>
+
+    <div class="field">
+      <label class="field-label">实际手数</label>
+      <input type="number" id="f-lots" step="1" inputmode="numeric" placeholder="按建议或自己定" oninput="calcLots()" />
+    </div>
+
+    <div class="field">
+      <label class="field-label">止损依据</label>
+      <textarea id="f-stop-reason" placeholder="如:破前重心下沿 / 跌破入场K低点"></textarea>
+    </div>
+
+    <div class="field">
+      <label class="field-label"><span class="field-num">11.</span>计划出场依据</label>
+      <textarea id="f-exit-plan" placeholder="如:到前高 / 出现反向小重心 / 1.5R 止盈"></textarea>
+    </div>
+
+    <div class="section-title">出场 & 复盘</div>
+
+    <div class="field">
+      <label class="field-label">分批出场 <span style="color:var(--text-3);font-size:11px">— 多次止盈/止损时,一笔一行</span></label>
+      <div id="exit-legs"></div>
+      <button type="button" class="btn-small" onclick="addLeg()" style="margin-bottom:6px">＋ 添加一笔出场</button>
+      <div id="legs-info" style="display:none;padding:10px 12px;background:var(--bg-2);border-radius:var(--radius);font-size:13px;line-height:1.7"></div>
+    </div>
+
+    <div class="field">
+      <label class="field-label"><span class="field-num">12.</span>实际出场价 <span style="color:var(--text-3);font-size:11px">— 用了分批就留空,自动按均价算</span></label>
+      <input type="number" id="f-exit" step="any" inputmode="decimal" />
+    </div>
+
+    <div class="field">
+      <label class="field-label"><span class="field-num">13.</span>实际出场原因</label>
+      <textarea id="f-exit-reason" placeholder="如:触发止损 / 计划止盈 / 提前主观平仓"></textarea>
+    </div>
+
+    <div class="field">
+      <label class="field-label">
+        <span class="field-num">14.</span>盈亏 (R)
+        <span style="color:var(--text-3);font-size:11px">— 留空自动计算</span>
+      </label>
+      <input type="number" id="f-r" step="0.01" inputmode="decimal" placeholder="如:1.5 或 -1" />
+    </div>
+
+    <div class="field">
+      <label class="field-label"><span class="field-num">15.</span>复盘一句话 — 本单最该改进的一点</label>
+      <textarea id="f-review" placeholder="一句话说清最值得改的地方"></textarea>
+    </div>
+
+    <div class="actions">
+      <button class="btn-primary" onclick="saveTrade()">✓ 保存</button>
+      <button class="btn-secondary" onclick="clearForm()">清空</button>
+    </div>
+  </div>
+
+  <!-- ===== 历史 ===== -->
+  <div id="tab-history" style="display:none">
+    <div class="toolbar">
+      <input type="text" id="filter-symbol" placeholder="按品种筛选" oninput="renderHistory()" />
+      <select id="filter-dir" onchange="renderHistory()">
+        <option value="">全部方向</option>
+        <option value="多">仅多</option>
+        <option value="空">仅空</option>
+      </select>
+      <select id="filter-result" onchange="renderHistory()">
+        <option value="">全部盈亏</option>
+        <option value="win">仅盈利</option>
+        <option value="loss">仅亏损</option>
+      </select>
+    </div>
+    <div id="history-list"></div>
+  </div>
+
+  <!-- ===== 统计 ===== -->
+  <div id="tab-stats">
+    <div id="stats-content"></div>
+  </div>
+</div>
+
+<!-- 菜单 modal -->
+<div class="modal-backdrop" id="menu-modal" onclick="hideMenu(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3>菜单</h3>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn-secondary" onclick="exportCSV();hideMenu()">📥 导出 CSV (Excel可打开)</button>
+      <button class="btn-secondary" onclick="exportJSON();hideMenu()">💾 备份 (JSON)</button>
+      <button class="btn-secondary" onclick="importJSON()">📤 导入备份</button>
+      <button class="btn-secondary" onclick="loadTemplate();hideMenu();switchTab('form')">📝 填示例</button>
+      <button class="btn-secondary btn-danger" onclick="clearAll();hideMenu()">🗑 清空所有数据</button>
+      <button class="btn-secondary" onclick="hideMenu()" style="margin-top:8px">取消</button>
+    </div>
+    <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)" />
+  </div>
+</div>
+
+<script>
+(function(){
+  const KEY = 'trade_journal_v1';
+  const SB_URL = 'https://tawovxvjcywlkfawoshg.supabase.co';
+  const SB_KEY = 'sb_publishable_pYcauYpjjqWU6oVXIMhxiw_uWVeNFvf';
+  let trades = [], editingId = null, sb, cloudOk = false;
+
+  // 1) 先读本地缓存，页面立即可用
+  try { const raw = localStorage.getItem(KEY); if (raw) trades = JSON.parse(raw); } catch(e) {}
+
+  function initSB() {
+    sb = window.supabase.createClient(SB_URL, SB_KEY);
+    syncFromCloud();
+  }
+
+  async function syncFromCloud() {
+    try {
+      const { data, error } = await sb.from('trades').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      const cloud = (data || []).map(row => ({ ...row.trade, id: row.id }));
+      if (JSON.stringify(cloud) !== JSON.stringify(trades)) {
+        trades = cloud;
+        localStorage.setItem(KEY, JSON.stringify(trades));
+        if (document.getElementById('tab-history').style.display !== 'none') renderHistory();
+        if (document.getElementById('tab-stats').style.display !== 'none') renderStats();
+      }
+      cloudOk = true;
+      setSyncDot(true);
+    } catch(e) { console.warn('云端同步失败，用本地缓存', e); setSyncDot(false); }
+  }
+
+  function setSyncDot(ok) {
+    const d = document.getElementById('sync-dot');
+    if (d) d.style.background = ok ? '#639922' : '#9a988f';
+  }
+
+  async function saveToCloud(t) {
+    try { await sb.from('trades').upsert({ id: t.id, trade: t, created_at: new Date().toISOString() }); setSyncDot(true); }
+    catch(e) { console.warn('云端保存失败，下次同步时会补上', e); setSyncDot(false); }
+    localStorage.setItem(KEY, JSON.stringify(trades));
+  }
+
+  async function deleteFromCloud(id) {
+    try { await sb.from('trades').delete().eq('id', id); setSyncDot(true); }
+    catch(e) { console.warn('云端删除失败', e); setSyncDot(false); }
+    localStorage.setItem(KEY, JSON.stringify(trades));
+  }
+
+  async function clearCloud() {
+    try { await sb.from('trades').delete().neq('id', '__none__'); setSyncDot(true); }
+    catch(e) { console.warn('云端清空失败', e); setSyncDot(false); }
+    localStorage.removeItem(KEY);
+  }
+
+  async function importToCloud(all) {
+    const rows = all.map(t => ({ id: t.id, trade: t, created_at: new Date().toISOString() }));
+    try { await sb.from('trades').upsert(rows); setSyncDot(true); }
+    catch(e) { console.warn('批量导入云端失败', e); setSyncDot(false); }
+    localStorage.setItem(KEY, JSON.stringify(trades));
+  }
+
+  // 启动云端同步
+  initSB();
+
+  // 初始化时间
+  function nowLocal() {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0,16);
+  }
+  document.getElementById('f-time').value = nowLocal();
+
+  updateCount();
+
+  window.switchTab = function(name) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab===name));
+    document.getElementById('tab-form').style.display = name==='form' ? '' : 'none';
+    document.getElementById('tab-history').style.display = name==='history' ? '' : 'none';
+    document.getElementById('tab-stats').style.display = name==='stats' ? '' : 'none';
+    if (name==='history') renderHistory();
+    if (name==='stats') renderStats();
+    window.scrollTo(0, 0);
+  };
+
+  window.pick = function(btn, group) {
+    const parent = btn.parentElement;
+    parent.querySelectorAll('button').forEach(b => {
+      b.classList.remove('on','on-long','on-short');
+    });
+    const v = btn.dataset.v;
+    if (group==='dir' && v==='多') btn.classList.add('on-long');
+    else if (group==='dir' && v==='空') btn.classList.add('on-short');
+    else btn.classList.add('on');
+    parent.dataset.value = v;
+  };
+
+  function getPicked(id) { return document.getElementById(id).dataset.value || ''; }
+
+  // 入场类型速查表(来自双顺体系汇总)
+  const SETUPS = {
+    'A1': { trigger:'回调否定+新P3突破', entry:'P3突破点', stop:'P3反向边界', target:'前期高低点', r:'3-10R', rec:'⭐⭐⭐⭐⭐', diff:'低' },
+    'A2': { trigger:'高位横盘+突破+回踩+突破', entry:'P3突破点', stop:'P3反向边界', target:'测量目标', r:'3-8R', rec:'⭐⭐⭐⭐⭐', diff:'低' },
+    'A3': { trigger:'重心抬高/降低后再突破', entry:'P3突破点', stop:'P3反向边界', target:'与前段相同', r:'3-6R', rec:'⭐⭐⭐⭐', diff:'低' },
+    'A4': { trigger:'大小同时突破', entry:'共振点', stop:'小P3反向边界', target:'大级别空间', r:'5-15R', rec:'⭐⭐⭐⭐⭐⭐', diff:'极低' },
+    'B1': { trigger:'震荡中周期清晰一段+P3突破', entry:'P3突破点', stop:'P3反向边界', target:'区间另一沿前停', r:'2-5R', rec:'⭐⭐⭐', diff:'中' },
+    'B2': { trigger:'触边+反向重心+突破', entry:'反向小重心突破点', stop:'区间边界外侧', target:'区间另一沿', r:'2-4R', rec:'⭐⭐⭐', diff:'中' },
+    'B3': { trigger:'突破后回归+反向突破', entry:'反向突破点', stop:'假突破极值', target:'区间另一沿', r:'2-4R', rec:'⭐⭐⭐', diff:'中' },
+    'C1': { trigger:'小级别反向重心+突破', entry:'小P3突破点', stop:'小P3反向边界', target:'前期反向高低点', r:'1-3R', rec:'⭐⭐', diff:'高' },
+    'C2': { trigger:'强123+反向重心+突破', entry:'反向重心突破点', stop:'趋势最后极值', target:'大幅回吐', r:'5-15R', rec:'⭐⭐', diff:'高' },
+    'D1': { trigger:'大小同时反向', entry:'共振反转点', stop:'反向极值', target:'大空间', r:'5-10R', rec:'⭐⭐⭐⭐', diff:'中' },
+    'D2': { trigger:'历史位+反转信号', entry:'反向突破点', stop:'关键位外侧', target:'—', r:'3-8R', rec:'⭐⭐⭐', diff:'中' },
+  };
+
+  window.showSetupInfo = function() {
+    const v = document.getElementById('f-entry-setup').value;
+    const box = document.getElementById('setup-info');
+    const code = v.split(' ')[0];
+    const s = SETUPS[code];
+    if (!s) { box.style.display = 'none'; return; }
+    box.style.display = '';
+    box.innerHTML =
+      '触发:' + s.trigger + '<br>' +
+      '进场:' + s.entry + ' · 止损:' + s.stop + '<br>' +
+      '止盈:' + s.target + ' · 预期:' + s.r + '<br>' +
+      '推荐度:' + s.rec + ' · 难度:' + s.diff;
+  };
+
+  // 常用品种每点价值(元/点),按关键词匹配品种输入框
+  const PV_MAP = [
+    [['螺纹','rb'],10], [['热卷','hc'],10],
+    [['镍','ni'],1], [['菜油','oi'],10], [['菜粕','rm'],10], [['焦煤','jm'],60],
+    [['铁矿','i2'],100], [['焦炭','j2'],100],
+    [['铜','cu'],5], [['铝','al'],5], [['锌','zn'],5], [['不锈钢','ss'],5],
+    [['沪银','白银','ag'],15], [['沪金','黄金','au'],1000],
+    [['橡胶','ru'],10], [['沥青','bu'],10], [['燃油','fu'],10],
+    [['pta','ta'],5], [['甲醇','ma'],10], [['玻璃','fg'],20], [['纯碱','sa'],20], [['尿素','ur'],20],
+    [['豆粕','m2'],10], [['豆油','y2'],10], [['棕榈','p2'],10],
+    [['白糖','sr'],10], [['棉花','cf'],5],
+    [['玉米','c2'],10], [['生猪','lh'],16],
+  ];
+
+  window.autoPV = function() {
+    const pvEl = document.getElementById('f-point-value');
+    if (pvEl.value !== '') return; // 已手动填过,不覆盖
+    const s = val('f-symbol').toLowerCase();
+    if (!s) return;
+    for (const [keys, pv] of PV_MAP) {
+      if (keys.some(k => s.includes(k))) { pvEl.value = pv; calcLots(); return; }
+    }
+  };
+
+  window.pickPV = function() {
+    const v = document.getElementById('f-pv-preset').value;
+    if (v) { document.getElementById('f-point-value').value = v; calcLots(); }
+  };
+
+  window.calcLots = function() {
+    const box = document.getElementById('lots-info');
+    const entry = effEntry(), stop = num('f-stop'), pv = num('f-point-value');
+    const capital = num('f-capital'), risk = num('f-risk');
+    if (entry===null || stop===null || pv===null || pv<=0 || entry===stop) {
+      box.style.display = 'none'; return;
+    }
+    const stopPts = Math.abs(entry - stop);
+    const perLot = stopPts * pv;
+    let html = '止损 <b>' + stopPts + '</b> 点 × 每点 ' + pv + ' 元 = 每手风险 <b>' + perLot.toFixed(0) + '</b> 元';
+    if (capital!==null && capital>0 && risk!==null && risk>0) {
+      const oneR = capital * risk / 100;
+      const lots = Math.floor(oneR / perLot);
+      html += '<br>1R = ' + capital + ' × ' + risk + '% = <b>' + oneR.toFixed(0) + '</b> 元';
+      if (lots >= 1) {
+        html += '<br>→ 建议 <b style="font-size:16px">' + lots + '</b> 手(向下取整)';
+      } else {
+        html += '<br><span style="color:var(--danger-text)">→ 不足 1 手:止损太远或资金不够,这单按 1% 风险做不了</span>';
+      }
+      const actual = num('f-lots');
+      if (actual!==null && actual>0) {
+        const actualRisk = actual * perLot;
+        const pct = capital>0 ? (actualRisk/capital*100) : 0;
+        const warn = pct > risk*1.05;
+        html += '<br>实际 ' + actual + ' 手 → 风险 ' + actualRisk.toFixed(0) + ' 元(' +
+          (warn?'<span style="color:var(--danger-text)">':'') + pct.toFixed(2) + '%' + (warn?' ⚠ 超出设定</span>':'') + ')';
+      }
+    }
+    box.style.display = '';
+    box.innerHTML = html;
+  };
+
+  // ---- 分批进场 ----
+  window.addEntryLeg = function(price, lots, reason) {
+    const wrap = document.getElementById('entry-legs');
+    const row = document.createElement('div');
+    row.className = 'eleg-row';
+    row.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:center';
+    row.innerHTML =
+      '<input type="number" step="any" inputmode="decimal" placeholder="进场价" class="eleg-price" style="flex:1.1;min-width:0" oninput="calcEntryLegs()">' +
+      '<input type="number" step="any" inputmode="numeric" placeholder="手数" class="eleg-lots" style="flex:0.7;min-width:0" oninput="calcEntryLegs()">' +
+      '<input type="text" placeholder="原因,如 首仓④进场 / 加仓" class="eleg-reason" style="flex:1.5;min-width:0">' +
+      '<button type="button" class="btn-small btn-danger" onclick="this.parentElement.remove();calcEntryLegs()">✕</button>';
+    if (price != null) row.querySelector('.eleg-price').value = price;
+    if (lots != null) row.querySelector('.eleg-lots').value = lots;
+    if (reason) row.querySelector('.eleg-reason').value = reason;
+    wrap.appendChild(row);
+    calcEntryLegs();
+  };
+
+  function getEntryLegs() {
+    return Array.from(document.querySelectorAll('#entry-legs .eleg-row')).map(r => ({
+      price: parseFloat(r.querySelector('.eleg-price').value),
+      lots: parseFloat(r.querySelector('.eleg-lots').value),
+      reason: r.querySelector('.eleg-reason').value.trim()
+    })).filter(l => !isNaN(l.price) && !isNaN(l.lots) && l.lots > 0);
+  }
+
+  function entryLegsStats(legs) {
+    const total = legs.reduce((s,l)=>s+l.lots,0);
+    const avg = legs.reduce((s,l)=>s+l.price*l.lots,0)/total;
+    return { total, avg: Math.round(avg*10000)/10000 };
+  }
+
+  // 有效进场价/总手数:优先手填,留空则取分批进场的均价/合计
+  function effEntry() {
+    const v = num('f-entry');
+    if (v!==null) return v;
+    const el = getEntryLegs();
+    return el.length ? entryLegsStats(el).avg : null;
+  }
+  function effLots() {
+    const v = num('f-lots');
+    if (v!==null) return v;
+    const el = getEntryLegs();
+    return el.length ? entryLegsStats(el).total : null;
+  }
+
+  window.calcEntryLegs = function() {
+    const box = document.getElementById('entry-legs-info');
+    const legs = getEntryLegs();
+    if (!legs.length) { box.style.display='none'; calcLegs(); return; }
+    const st = entryLegsStats(legs);
+    const stop = num('f-stop');
+    let html = '共进 <b>' + st.total + '</b> 手,加权均价 <b>' + st.avg + '</b>';
+    if (stop!==null && st.avg!==stop) {
+      const pv = num('f-point-value');
+      html += '<br>按均价算止损距离 <b>' + Math.round(Math.abs(st.avg-stop)*100)/100 + '</b> 点';
+      const capital = num('f-capital'), risk = num('f-risk');
+      if (pv!==null && pv>0 && capital!==null && capital>0 && risk!==null && risk>0) {
+        const totalRisk = Math.abs(st.avg-stop) * pv * st.total;
+        const pct = totalRisk/capital*100;
+        const warn = pct > risk*1.05;
+        html += ',总风险 ' + totalRisk.toFixed(0) + ' 元(' +
+          (warn?'<span style="color:var(--danger-text)">':'') + pct.toFixed(2) + '%' + (warn?' ⚠ 超出设定</span>':'') + ')';
+      }
+    }
+    html += '<br><span style="color:var(--text-3);font-size:11px">保存时:9进场价 / 实际手数 留空会自动按上面填入;盈亏R按均价和总手数计</span>';
+    box.style.display='';
+    box.innerHTML = html;
+    calcLegs(); // 进场变了,刷新出场汇总
+  };
+
+  // ---- 分批出场 ----
+  window.addLeg = function(price, lots, reason) {
+    const wrap = document.getElementById('exit-legs');
+    const row = document.createElement('div');
+    row.className = 'leg-row';
+    row.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:center';
+    row.innerHTML =
+      '<input type="number" step="any" inputmode="decimal" placeholder="出场价" class="leg-price" style="flex:1.1;min-width:0" oninput="calcLegs()">' +
+      '<input type="number" step="any" inputmode="numeric" placeholder="手数" class="leg-lots" style="flex:0.7;min-width:0" oninput="calcLegs()">' +
+      '<input type="text" placeholder="原因,如 +2R止盈" class="leg-reason" style="flex:1.5;min-width:0">' +
+      '<button type="button" class="btn-small btn-danger" onclick="this.parentElement.remove();calcLegs()">✕</button>';
+    if (price != null) row.querySelector('.leg-price').value = price;
+    if (lots != null) row.querySelector('.leg-lots').value = lots;
+    if (reason) row.querySelector('.leg-reason').value = reason;
+    wrap.appendChild(row);
+    calcLegs();
+  };
+
+  function getLegs() {
+    return Array.from(document.querySelectorAll('#exit-legs .leg-row')).map(r => ({
+      price: parseFloat(r.querySelector('.leg-price').value),
+      lots: parseFloat(r.querySelector('.leg-lots').value),
+      reason: r.querySelector('.leg-reason').value.trim()
+    })).filter(l => !isNaN(l.price) && !isNaN(l.lots) && l.lots > 0);
+  }
+
+  function legsStats(legs, entry, stop, dir, totalLots) {
+    const closed = legs.reduce((s,l)=>s+l.lots,0);
+    const avg = legs.reduce((s,l)=>s+l.price*l.lots,0)/closed;
+    let r = null, pnlPts = null;
+    if (entry!==null) {
+      pnlPts = legs.reduce((s,l)=> s + (dir==='空'?(entry-l.price):(l.price-entry))*l.lots, 0);
+      if (stop!==null && entry!==stop) {
+        const risk = Math.abs(entry-stop);
+        const baseLots = (totalLots!=null && totalLots>0) ? totalLots : closed;
+        r = Math.round(pnlPts/(risk*baseLots)*100)/100;
+      }
+    }
+    return { closed, avg: Math.round(avg*10000)/10000, r, pnlPts };
+  }
+
+  window.calcLegs = function() {
+    const box = document.getElementById('legs-info');
+    const legs = getLegs();
+    if (!legs.length) { box.style.display='none'; return; }
+    const total = effLots();
+    const st = legsStats(legs, effEntry(), num('f-stop'), getPicked('f-dir'), total);
+    let html = '已平 <b>' + st.closed + '</b> 手' +
+      (total!=null ? ' / 共 ' + total + ' 手,剩 <b>' + (total-st.closed) + '</b> 手' : '') +
+      ',加权均价 <b>' + st.avg + '</b>';
+    if (st.r !== null) {
+      html += '<br>合计盈亏 = <b>' + (st.r>0?'+':'') + st.r + 'R</b>' +
+        (total!=null && st.closed<total ? '(以总仓位的1R为基准,未平部分不计)' : '');
+    }
+    const pv = num('f-point-value');
+    if (st.pnlPts !== null && pv !== null && pv > 0) {
+      const amt = st.pnlPts * pv;
+      html += '<br>≈ 实际金额 <b style="color:' + (amt>=0?'var(--success-text)':'var(--danger-text)') + '">' +
+        (amt>0?'+':'') + Math.round(amt) + ' 元</b><span style="color:var(--text-3);font-size:11px">(不含手续费)</span>';
+    }
+    if (total!=null && st.closed>total) html += '<br><span style="color:var(--danger-text)">⚠ 已平手数超过总手数,检查一下</span>';
+    html += '<br><span style="color:var(--text-3);font-size:11px">保存时:12出场价 / 14盈亏R 留空会自动按上面填入</span>';
+    box.style.display='';
+    box.innerHTML = html;
+  };
+
+  // 账户资金/风险% 记住设置
+  const SET_KEY = 'trade_journal_settings';
+  window.saveSettings = function() {
+    try {
+      localStorage.setItem(SET_KEY, JSON.stringify({ capital: val('f-capital'), risk: val('f-risk') }));
+    } catch(e) {}
+  };
+  function loadSettings() {
+    try {
+      const s = JSON.parse(localStorage.getItem(SET_KEY) || '{}');
+      if (s.capital) document.getElementById('f-capital').value = s.capital;
+      document.getElementById('f-risk').value = s.risk || '1';
+    } catch(e) {}
+  }
+  loadSettings();
+  document.getElementById('f-symbol').addEventListener('input', autoPV);
+  document.getElementById('f-symbol').addEventListener('change', autoPV);
+
+  // 编辑旧记录时,如果其入场类型已不在下拉中(后续改过表),临时加回去,避免丢失
+  function setSetup(v) {
+    const sel = document.getElementById('f-entry-setup');
+    if (v && !Array.from(sel.options).some(o => o.value === v)) {
+      const o = document.createElement('option');
+      o.value = v;
+      o.textContent = v + '(旧版类型)';
+      sel.appendChild(o);
+    }
+    sel.value = v || '';
+    showSetupInfo();
+  }
+
+  function val(id) { return document.getElementById(id).value.trim(); }
+  function num(id) { const v = val(id); return v==='' ? null : parseFloat(v); }
+
+  window.saveTrade = function() {
+    let entry = num('f-entry');
+    let lots = num('f-lots');
+    const entryLegs = getEntryLegs();
+    if (entryLegs.length) {
+      const est = entryLegsStats(entryLegs);
+      if (entry===null) entry = est.avg;
+      if (lots===null) lots = est.total;
+    }
+    const stop = num('f-stop');
+    let exit = num('f-exit');
+    let r = num('f-r');
+
+    const exits = getLegs();
+    if (exits.length) {
+      const st = legsStats(exits, entry, stop, getPicked('f-dir'), lots);
+      if (exit===null) exit = st.avg;
+      if (r===null && st.r!==null) r = st.r;
+    }
+
+    // 盈亏金额(元) = 出减进 × 手数 × 每点价值,与止损无关
+    let amount = null;
+    {
+      const pv = num('f-point-value');
+      const dirS = getPicked('f-dir');
+      if (pv!==null && pv>0 && entry!==null) {
+        if (exits.length) {
+          amount = exits.reduce((s,l)=> s + (dirS==='空'?(entry-l.price):(l.price-entry))*l.lots, 0) * pv;
+        } else if (exit!==null && lots!==null && lots>0) {
+          amount = (dirS==='空'?(entry-exit):(exit-entry)) * lots * pv;
+        }
+        if (amount!==null) amount = Math.round(amount*100)/100;
+      }
+    }
+
+    if (r===null && entry!==null && stop!==null && exit!==null && entry!==stop) {
+      const risk = Math.abs(entry - stop);
+      const dir = getPicked('f-dir');
+      const pnl = dir==='空' ? (entry - exit) : (exit - entry);
+      r = Math.round((pnl / risk) * 100) / 100;
+    }
+
+    const t = {
+      id: editingId || ('t' + Date.now()),
+      time: val('f-time'),
+      symbol: val('f-symbol'),
+      bigTF: val('f-big'),
+      smallTF: val('f-small'),
+      dir: getPicked('f-dir'),
+      trend: getPicked('f-trend'),
+      preLow: num('f-pre-low'), preHigh: num('f-pre-high'),
+      postLow: num('f-post-low'), postHigh: num('f-post-high'),
+      rel: getPicked('f-rel'),
+      newLow: num('f-new-low'), newHigh: num('f-new-high'),
+      breakDir: getPicked('f-break'),
+      breakPrice: num('f-break-price'),
+      entrySetup: val('f-entry-setup'),
+      entryReason: val('f-entry-reason'),
+      entry, stop, exit,
+      capital: num('f-capital'),
+      riskPct: num('f-risk'),
+      pointValue: num('f-point-value'),
+      lots: lots,
+      entryLegs: entryLegs,
+      exits: exits,
+      amount: amount,
+      stopReason: val('f-stop-reason'),
+      exitPlan: val('f-exit-plan'),
+      exitReason: val('f-exit-reason'),
+      r,
+      review: val('f-review'),
+    };
+
+    if (editingId) {
+      const i = trades.findIndex(x => x.id===editingId);
+      if (i>=0) trades[i] = t;
+      editingId = null;
+    } else {
+      trades.unshift(t);
+    }
+    saveToCloud(t);
+    updateCount();
+    toast('已保存 ✓');
+    clearForm();
+  };
+
+  window.clearForm = function() {
+    document.querySelectorAll('#tab-form input, #tab-form textarea').forEach(el => {
+      if (el.type !== 'datetime-local') el.value = '';
+    });
+    document.querySelectorAll('#tab-form .seg').forEach(s => {
+      s.dataset.value = '';
+      s.querySelectorAll('button').forEach(b => b.classList.remove('on','on-long','on-short'));
+    });
+    document.getElementById('f-time').value = nowLocal();
+    document.getElementById('f-entry-setup').value = '';
+    document.getElementById('setup-info').style.display = 'none';
+    document.getElementById('f-pv-preset').value = '';
+    document.getElementById('lots-info').style.display = 'none';
+    document.getElementById('exit-legs').innerHTML = '';
+    document.getElementById('legs-info').style.display = 'none';
+    document.getElementById('entry-legs').innerHTML = '';
+    document.getElementById('entry-legs-info').style.display = 'none';
+    loadSettings(); // 账户资金和风险%不清,自动填回
+    editingId = null;
+    window.scrollTo(0, 0);
+  };
+
+  window.loadTemplate = function() {
+    document.getElementById('f-symbol').value = '螺纹 RB2510';
+    document.getElementById('f-big').value = '1H';
+    document.getElementById('f-small').value = '5M';
+    pick(document.querySelector('#f-dir button[data-v="多"]'), 'dir');
+    pick(document.querySelector('#f-trend button[data-v="上涨"]'), 'trend');
+    document.getElementById('f-pre-low').value = '3200';
+    document.getElementById('f-pre-high').value = '3250';
+    document.getElementById('f-post-low').value = '3260';
+    document.getElementById('f-post-high').value = '3290';
+    pick(document.querySelector('#f-rel button[data-v="高"]'), 'rel');
+    document.getElementById('f-new-low').value = '3270';
+    document.getElementById('f-new-high').value = '3285';
+    pick(document.querySelector('#f-break button[data-v="向上"]'), 'break');
+    document.getElementById('f-break-price').value = '3286';
+    setSetup('A1 大趋势回调结束做顺势');
+    document.getElementById('f-entry-reason').value = '1H上涨,后重心高于前重心;5M回调否定,新P3(3270-3285)被向上突破';
+    document.getElementById('f-entry').value = '3287';
+    document.getElementById('f-stop').value = '3268';
+    if (!val('f-capital')) document.getElementById('f-capital').value = '100000';
+    document.getElementById('f-point-value').value = '10';
+    document.getElementById('f-lots').value = '5';
+    document.getElementById('exit-legs').innerHTML = '';
+    addLeg(3325, 3, '+2R止盈,止损移保本');
+    addLeg(3341, 2, '反向小重心出现');
+    calcLots();
+    document.getElementById('f-stop-reason').value = '破新小重心下沿';
+    document.getElementById('f-exit-plan').value = '到前高 3320 或反向小重心成立';
+  };
+
+  function updateCount() {
+    document.getElementById('count').textContent = trades.length;
+  }
+
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  window.renderHistory = function() {
+    const list = document.getElementById('history-list');
+    const fs = document.getElementById('filter-symbol').value.trim().toLowerCase();
+    const fd = document.getElementById('filter-dir').value;
+    const fr = document.getElementById('filter-result').value;
+
+    let filtered = trades.filter(t => {
+      if (fs && !(t.symbol||'').toLowerCase().includes(fs)) return false;
+      if (fd && t.dir !== fd) return false;
+      if (fr === 'win' && !(t.r > 0)) return false;
+      if (fr === 'loss' && !(t.r < 0)) return false;
+      return true;
+    });
+
+    if (filtered.length===0) {
+      list.innerHTML = '<div class="empty">还没有记录。去「录入」填一笔吧。</div>';
+      return;
+    }
+
+    list.innerHTML = filtered.map(t => {
+      const rDisp = t.r===null||t.r===undefined ? '—' : (t.r > 0 ? '+' : '') + t.r.toFixed(2) + 'R';
+      const rCls = t.r > 0 ? 'pnl-pos' : (t.r < 0 ? 'pnl-neg' : '');
+      const amt = tradeAmount(t);
+      const amtDisp = amt===null ? '' : '<div style="font-size:11px;color:var(--text-3)">' + (amt>0?'+':'') + Math.round(amt) + ' 元</div>';
+      const dirCls = t.dir==='多' ? 'pill-long' : 'pill-short';
+      const timeShort = (t.time||'').replace('T',' ');
+      return '<div class="record-row">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">' +
+          '<div style="font-weight:500;font-size:14px">' + escapeHtml(t.symbol||'未填') + ' <span class="pill ' + dirCls + '">' + (t.dir||'?') + '</span></div>' +
+          '<div style="text-align:right"><div class="' + rCls + '" style="font-size:15px">' + rDisp + '</div>' + amtDisp + '</div>' +
+        '</div>' +
+        '<div class="record-meta">' +
+          '<span>🕐 ' + escapeHtml(timeShort) + '</span>' +
+          (t.entry!==null?'<span>进 ' + t.entry + ' → 出 ' + (t.exit==null?'?':t.exit) + (t.lots!=null?' · ' + t.lots + '手':'') + '</span>':'') +
+          (t.entryLegs&&t.entryLegs.length?'<span style="flex-basis:100%;margin-top:4px">分批进: ' + escapeHtml(t.entryLegs.map(l => l.price + '×' + l.lots + '手' + (l.reason?'('+l.reason+')':'')).join(' → ')) + '</span>':'') +
+          (t.exits&&t.exits.length?'<span style="flex-basis:100%;margin-top:4px">分批出: ' + escapeHtml(t.exits.map(l => l.price + '×' + l.lots + '手' + (l.reason?'('+l.reason+')':'')).join(' → ')) + '</span>':'') +
+          (t.entrySetup||t.entryReason?'<span style="flex-basis:100%;margin-top:4px">📌 ' + escapeHtml([t.entrySetup, t.entryReason].filter(Boolean).join(' — ')) + '</span>':'') +
+          (t.review?'<span style="flex-basis:100%;color:var(--text);margin-top:4px">💡 ' + escapeHtml(t.review) + '</span>':'') +
+        '</div>' +
+        '<div style="margin-top:10px;display:flex;gap:8px">' +
+          '<button class="btn-small" onclick="editTrade(\'' + t.id + '\')">编辑</button>' +
+          '<button class="btn-small btn-danger" onclick="deleteTrade(\'' + t.id + '\')">删除</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  };
+
+  window.editTrade = function(id) {
+    const t = trades.find(x => x.id===id);
+    if (!t) return;
+    editingId = id;
+    document.getElementById('f-time').value = t.time||'';
+    document.getElementById('f-symbol').value = t.symbol||'';
+    document.getElementById('f-big').value = t.bigTF||'';
+    document.getElementById('f-small').value = t.smallTF||'';
+    setSeg('f-dir', t.dir);
+    setSeg('f-trend', t.trend);
+    document.getElementById('f-pre-low').value = t.preLow==null?'':t.preLow;
+    document.getElementById('f-pre-high').value = t.preHigh==null?'':t.preHigh;
+    document.getElementById('f-post-low').value = t.postLow==null?'':t.postLow;
+    document.getElementById('f-post-high').value = t.postHigh==null?'':t.postHigh;
+    setSeg('f-rel', t.rel);
+    document.getElementById('f-new-low').value = t.newLow==null?'':t.newLow;
+    document.getElementById('f-new-high').value = t.newHigh==null?'':t.newHigh;
+    setSeg('f-break', t.breakDir);
+    document.getElementById('f-break-price').value = t.breakPrice==null?'':t.breakPrice;
+    setSetup(t.entrySetup);
+    let reason = t.entryReason||'';
+    if (t.entryTags && !t.entrySetup) reason = '【4步事件:' + t.entryTags + '】' + (reason?' ':'') + reason;
+    document.getElementById('f-entry-reason').value = reason;
+    document.getElementById('f-entry').value = t.entry==null?'':t.entry;
+    document.getElementById('f-stop').value = t.stop==null?'':t.stop;
+    if (t.capital!=null) document.getElementById('f-capital').value = t.capital;
+    if (t.riskPct!=null) document.getElementById('f-risk').value = t.riskPct;
+    document.getElementById('f-point-value').value = t.pointValue==null?'':t.pointValue;
+    document.getElementById('f-lots').value = t.lots==null?'':t.lots;
+    calcLots();
+    document.getElementById('f-exit').value = t.exit==null?'':t.exit;
+    document.getElementById('entry-legs').innerHTML = '';
+    (t.entryLegs||[]).forEach(l => addEntryLeg(l.price, l.lots, l.reason));
+    document.getElementById('exit-legs').innerHTML = '';
+    (t.exits||[]).forEach(l => addLeg(l.price, l.lots, l.reason));
+    calcEntryLegs();
+    document.getElementById('f-stop-reason').value = t.stopReason||'';
+    document.getElementById('f-exit-plan').value = t.exitPlan||'';
+    document.getElementById('f-exit-reason').value = t.exitReason||'';
+    document.getElementById('f-r').value = t.r==null?'':t.r;
+    document.getElementById('f-review').value = t.review||'';
+    switchTab('form');
+  };
+
+  function setSeg(id, v) {
+    const seg = document.getElementById(id);
+    seg.dataset.value = v||'';
+    seg.querySelectorAll('button').forEach(b => {
+      b.classList.remove('on','on-long','on-short');
+      if (b.dataset.v === v) {
+        if (id==='f-dir' && v==='多') b.classList.add('on-long');
+        else if (id==='f-dir' && v==='空') b.classList.add('on-short');
+        else b.classList.add('on');
+      }
+    });
+  }
+
+  window.deleteTrade = function(id) {
+    if (!confirm('确定删除这笔记录?')) return;
+    trades = trades.filter(x => x.id !== id);
+    deleteFromCloud(id);
+    updateCount();
+    renderHistory();
+    toast('已删除');
+  };
+
+  // ---- 统计图表(纯SVG,无外部依赖) ----
+  function buildCharts(closed) {
+    if (closed.length < 1) return '';
+    const seq = closed.slice().sort((a,b) => (a.time||'').localeCompare(b.time||''));
+    const rs = seq.map(t => t.r);
+    let acc = 0;
+    const cums = rs.map(r => { acc += r; return Math.round(acc*100)/100; });
+
+    const W = 620, H = 190, padL = 44, padR = 14, padT = 14, padB = 20;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+
+    function makeScale(vals) {
+      let lo = Math.min(0, ...vals), hi = Math.max(0, ...vals);
+      if (lo === hi) { hi = lo + 1; }
+      const span = hi - lo;
+      lo -= span*0.06; hi += span*0.06;
+      return v => padT + (hi - v) / (hi - lo) * plotH;
+    }
+    function fmt(v) { return (v>0?'+':'') + (Math.abs(v)>=10 ? v.toFixed(0) : v.toFixed(1)); }
+    function axis(y0, lo, hi, yLo, yHi) {
+      return '<line x1="'+padL+'" y1="'+y0+'" x2="'+(W-padR)+'" y2="'+y0+'" stroke="var(--text-3)" stroke-width="1" stroke-dasharray="3,3" opacity="0.6"/>' +
+        '<text x="'+(padL-5)+'" y="'+(y0+3)+'" text-anchor="end" font-size="10" fill="var(--text-3)">0</text>' +
+        '<text x="'+(padL-5)+'" y="'+(yHi+8)+'" text-anchor="end" font-size="10" fill="var(--text-3)">'+fmt(hi)+'</text>' +
+        '<text x="'+(padL-5)+'" y="'+(yLo)+'" text-anchor="end" font-size="10" fill="var(--text-3)">'+fmt(lo)+'</text>';
+    }
+    const svgOpen = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block" xmlns="http://www.w3.org/2000/svg">';
+    const box = s => '<div style="background:var(--bg-2);border-radius:var(--radius);padding:10px 8px;margin-bottom:16px">'+s+'</div>';
+
+    // 图1:累计R曲线
+    let lineChart = '';
+    {
+      const lo = Math.min(0, ...cums), hi = Math.max(0, ...cums);
+      const sy = makeScale(cums);
+      const sx = i => seq.length===1 ? padL + plotW/2 : padL + i/(seq.length-1)*plotW;
+      const finalClr = cums[cums.length-1] >= 0 ? 'var(--success-text)' : 'var(--danger-text)';
+      const pts = cums.map((v,i) => sx(i).toFixed(1)+','+sy(v).toFixed(1)).join(' ');
+      const areaPts = padL+','+sy(0).toFixed(1)+' ' + pts + ' ' + sx(seq.length-1).toFixed(1)+','+sy(0).toFixed(1);
+      const last = cums[cums.length-1];
+      const lastX = sx(seq.length-1), lastY = sy(last);
+      lineChart = box(svgOpen +
+        axis(sy(0), lo, hi, sy(lo<0?lo:0), sy(hi)) +
+        (seq.length>1 ? '<polygon points="'+areaPts+'" fill="'+finalClr+'" opacity="0.12"/>' : '') +
+        '<polyline points="'+pts+'" fill="none" stroke="'+finalClr+'" stroke-width="2" stroke-linejoin="round"/>' +
+        '<circle cx="'+lastX.toFixed(1)+'" cy="'+lastY.toFixed(1)+'" r="3.5" fill="'+finalClr+'"/>' +
+        '<text x="'+Math.min(lastX, W-padR-4).toFixed(1)+'" y="'+(lastY-7).toFixed(1)+'" text-anchor="end" font-size="11" font-weight="600" fill="'+finalClr+'">'+(last>0?'+':'')+last.toFixed(2)+'R</text>' +
+        '</svg>');
+    }
+
+    // 图2:每单R柱状图
+    let barChart = '';
+    {
+      const lo = Math.min(0, ...rs), hi = Math.max(0, ...rs);
+      const sy = makeScale(rs);
+      const y0 = sy(0);
+      const n = rs.length;
+      const slot = plotW / n;
+      const bw = Math.max(2, Math.min(24, slot*0.65));
+      const bars = rs.map((r,i) => {
+        const x = padL + slot*i + (slot-bw)/2;
+        const y = Math.min(y0, sy(r));
+        const h = Math.max(1, Math.abs(sy(r)-y0));
+        const clr = r>0 ? 'var(--success-text)' : (r<0 ? 'var(--danger-text)' : 'var(--text-3)');
+        return '<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+h.toFixed(1)+'" rx="1.5" fill="'+clr+'" opacity="0.85"/>';
+      }).join('');
+      barChart = box(svgOpen + axis(y0, lo, hi, sy(lo<0?lo:0), sy(hi)) + bars + '</svg>');
+    }
+
+    return '<div class="section-title" style="margin-top:0">累计 R 曲线(按时间)</div>' + lineChart +
+           '<div class="section-title">每单 R</div>' + barChart;
+  }
+
+  // 取记录的盈亏金额;旧记录没存过的,有每点价值就现场补算
+  function tradeAmount(t) {
+    if (t.amount!=null && !isNaN(t.amount)) return t.amount;
+    if (t.pointValue==null || t.entry==null) return null;
+    const short = t.dir==='空';
+    let pts = null;
+    if (t.exits && t.exits.length) {
+      pts = t.exits.reduce((s,l)=> s + (short?(t.entry-l.price):(l.price-t.entry))*l.lots, 0);
+    } else if (t.exit!=null && t.lots!=null && t.lots>0) {
+      pts = (short?(t.entry-t.exit):(t.exit-t.entry)) * t.lots;
+    }
+    return pts===null ? null : Math.round(pts*t.pointValue*100)/100;
+  }
+
+  window.renderStats = function() {
+    const c = document.getElementById('stats-content');
+    if (trades.length===0) {
+      c.innerHTML = '<div class="empty">还没有数据可统计。</div>';
+      return;
+    }
+    const closed = trades.filter(t => t.r !== null && t.r !== undefined && !isNaN(t.r));
+    const wins = closed.filter(t => t.r > 0);
+    const losses = closed.filter(t => t.r < 0);
+    const winRate = closed.length ? Math.round(wins.length / closed.length * 100) : 0;
+    const totalR = closed.reduce((s,t) => s + t.r, 0);
+    const avgR = closed.length ? totalR / closed.length : 0;
+    const avgWin = wins.length ? wins.reduce((s,t)=>s+t.r,0)/wins.length : 0;
+    const avgLoss = losses.length ? losses.reduce((s,t)=>s+t.r,0)/losses.length : 0;
+
+    const bySymbol = {};
+    closed.forEach(t => {
+      const k = t.symbol || '未填';
+      if (!bySymbol[k]) bySymbol[k] = { n:0, r:0, w:0 };
+      bySymbol[k].n++;
+      bySymbol[k].r += t.r;
+      if (t.r > 0) bySymbol[k].w++;
+    });
+    const symbolRows = Object.entries(bySymbol).sort((a,b)=>b[1].r-a[1].r).map(([k,v]) => {
+      const wr = Math.round(v.w/v.n*100);
+      const rClr = v.r>0?'var(--success-text)':(v.r<0?'var(--danger-text)':'var(--text)');
+      return '<tr>' +
+        '<td>' + escapeHtml(k) + '</td>' +
+        '<td style="text-align:right">' + v.n + '</td>' +
+        '<td style="text-align:right">' + wr + '%</td>' +
+        '<td style="text-align:right;color:' + rClr + ';font-weight:500">' + (v.r>0?'+':'') + v.r.toFixed(2) + 'R</td>' +
+      '</tr>';
+    }).join('');
+
+    const totalClr = totalR>0?'var(--success-text)':(totalR<0?'var(--danger-text)':'inherit');
+    const amts = closed.map(tradeAmount).filter(a => a!==null && !isNaN(a));
+    const totalAmt = amts.reduce((s,a)=>s+a, 0);
+    const amtClr = totalAmt>0?'var(--success-text)':(totalAmt<0?'var(--danger-text)':'inherit');
+    const amtCard = amts.length ?
+      '<div class="stat-card"><div class="stat-label">累计盈亏(元,不含手续费)</div><div class="stat-value" style="color:' + amtClr + '">' + (totalAmt>0?'+':'') + Math.round(totalAmt) + '</div></div>' : '';
+
+    c.innerHTML =
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px">' +
+        '<div class="stat-card"><div class="stat-label">总单数</div><div class="stat-value">' + trades.length + '</div></div>' +
+        '<div class="stat-card"><div class="stat-label">已了结</div><div class="stat-value">' + closed.length + '</div></div>' +
+        '<div class="stat-card"><div class="stat-label">胜率</div><div class="stat-value">' + winRate + '%</div></div>' +
+        '<div class="stat-card"><div class="stat-label">累计 R</div><div class="stat-value" style="color:' + totalClr + '">' + (totalR>0?'+':'') + totalR.toFixed(2) + '</div></div>' +
+        amtCard +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:20px">' +
+        '<div class="stat-card"><div class="stat-label">平均 R</div><div class="stat-value" style="font-size:18px">' + (avgR>0?'+':'') + avgR.toFixed(2) + '</div></div>' +
+        '<div class="stat-card"><div class="stat-label">平均盈</div><div class="stat-value" style="font-size:18px;color:var(--success-text)">+' + avgWin.toFixed(2) + '</div></div>' +
+        '<div class="stat-card"><div class="stat-label">平均亏</div><div class="stat-value" style="font-size:18px;color:var(--danger-text)">' + avgLoss.toFixed(2) + '</div></div>' +
+      '</div>' +
+      buildCharts(closed) +
+      '<div class="section-title" style="margin-top:0">按品种</div>' +
+      '<table class="stats-table">' +
+        '<thead><tr><th>品种</th><th style="text-align:right">笔数</th><th style="text-align:right">胜率</th><th style="text-align:right">累计R</th></tr></thead>' +
+        '<tbody>' + symbolRows + '</tbody>' +
+      '</table>';
+  };
+
+  window.exportCSV = function() {
+    if (trades.length===0) { toast('没有数据可导出'); return; }
+    const headers = ['时间','品种合约','大周期','小周期','方向','大趋势','前重心下','前重心上','后重心下','后重心上','与前关系','新小重心下','新小重心上','突破方向','突破价','入场类型','入场理由','分批进场','进场价','止损价','每点价值','手数','止损依据','计划出场依据','分批出场','实际出场价','实际出场原因','盈亏R','盈亏金额(元)','复盘一句话'];
+    const rows = trades.map(t => [
+      t.time, t.symbol, t.bigTF, t.smallTF, t.dir, t.trend,
+      t.preLow, t.preHigh, t.postLow, t.postHigh, t.rel,
+      t.newLow, t.newHigh, t.breakDir, t.breakPrice,
+      t.entrySetup || t.entryTags, t.entryReason,
+      (t.entryLegs||[]).map(l => l.price + '×' + l.lots + '手' + (l.reason?'('+l.reason+')':'')).join(' | '),
+      t.entry, t.stop, t.pointValue, t.lots, t.stopReason, t.exitPlan,
+      (t.exits||[]).map(l => l.price + '×' + l.lots + '手' + (l.reason?'('+l.reason+')':'')).join(' | '),
+      t.exit, t.exitReason, t.r, tradeAmount(t), t.review
+    ]);
+    const csv = '\uFEFF' + [headers, ...rows].map(r => r.map(c => {
+      if (c===null||c===undefined) return '';
+      const s = String(c).replace(/"/g, '""');
+      return /[",\n]/.test(s) ? '"' + s + '"' : s;
+    }).join(',')).join('\n');
+    downloadFile(csv, 'trades_' + new Date().toISOString().slice(0,10) + '.csv', 'text/csv;charset=utf-8;');
+    toast('已导出 CSV');
+  };
+
+  window.exportJSON = function() {
+    if (trades.length===0) { toast('没有数据可备份'); return; }
+    const data = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), trades }, null, 2);
+    downloadFile(data, 'trade_journal_backup_' + new Date().toISOString().slice(0,10) + '.json', 'application/json');
+    toast('备份已下载');
+  };
+
+  window.importJSON = function() {
+    document.getElementById('import-file').click();
+  };
+
+  window.handleImport = function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (!Array.isArray(data.trades)) throw new Error('格式错误');
+        if (!confirm('将导入 ' + data.trades.length + ' 条记录,会覆盖现有数据。继续?')) return;
+        trades = data.trades;
+        importToCloud(trades);
+        updateCount();
+        hideMenu();
+        toast('已导入 ' + data.trades.length + ' 条');
+      } catch(err) {
+        alert('导入失败:' + err.message);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  window.clearAll = function() {
+    if (!confirm('确定清空所有记录?此操作不可撤销。建议先导出备份。')) return;
+    if (!confirm('再次确认:真的全部删除?')) return;
+    trades = [];
+    clearCloud();
+    updateCount();
+    toast('已清空');
+  };
+
+  function downloadFile(content, filename, mime) {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+  }
+
+  function escapeHtml(s) {
+    if (s===null||s===undefined) return '';
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  window.showMenu = function() {
+    document.getElementById('menu-modal').classList.add('show');
+  };
+  window.hideMenu = function(e) {
+    if (e && e.target !== e.currentTarget) return;
+    document.getElementById('menu-modal').classList.remove('show');
+  };
+})();
+</script>
+</body>
+</html>
