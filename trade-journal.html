@@ -613,6 +613,7 @@
       <button class="btn-secondary" onclick="exportCSV();hideMenu()">📥 导出 CSV (Excel可打开)</button>
       <button class="btn-secondary" onclick="exportJSON();hideMenu()">💾 备份 (JSON)</button>
       <button class="btn-secondary" onclick="importJSON()">📤 导入备份</button>
+      <button class="btn-secondary" onclick="uploadLocalToCloud();hideMenu()">☁️ 上传本地数据到云端</button>
       <button class="btn-secondary" onclick="loadTemplate();hideMenu();switchTab('form')">📝 填示例</button>
       <button class="btn-secondary btn-danger" onclick="clearAll();hideMenu()">🗑 清空所有数据</button>
       <button class="btn-secondary" onclick="hideMenu()" style="margin-top:8px">取消</button>
@@ -632,6 +633,7 @@
   try { const raw = localStorage.getItem(KEY); if (raw) trades = JSON.parse(raw); } catch(e) {}
 
   function initSB() {
+    if (!window.supabase) { setTimeout(initSB, 300); return; }
     sb = window.supabase.createClient(SB_URL, SB_KEY);
     syncFromCloud();
   }
@@ -685,6 +687,16 @@
     catch(e) { console.warn('批量导入云端失败', e); setSyncDot(false); }
     localStorage.setItem(KEY, JSON.stringify(trades));
   }
+
+  window.uploadLocalToCloud = function() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      const local = raw ? JSON.parse(raw) : [];
+      if (!local.length) { toast('本地没有数据可上传'); return; }
+      importToCloud(local);
+      toast('已上传 ' + local.length + ' 条记录到云端 ✓');
+    } catch(e) { toast('上传失败: ' + e.message); }
+  };
 
   // 启动云端同步
   initSB();
